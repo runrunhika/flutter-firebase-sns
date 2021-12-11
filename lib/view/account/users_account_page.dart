@@ -1,25 +1,34 @@
+import 'dart:convert';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_sns_app/model/account.dart';
 import 'package:firebase_sns_app/model/post.dart';
-import 'package:firebase_sns_app/utils/authentication.dart';
+import 'package:firebase_sns_app/utils/firestore/firebase.dart';
 import 'package:firebase_sns_app/utils/firestore/posts.dart';
 import 'package:firebase_sns_app/utils/firestore/users.dart';
-import 'package:firebase_sns_app/view/account/edit_account_page.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-class AccountPage extends StatefulWidget {
-  const AccountPage({Key? key}) : super(key: key);
+class UsersAccountPage extends StatefulWidget {
+  final String id;
+  final String name; //ユーザーネーム
+  final String imagePath; //プロフィール画像
+  final String selfIntroduction; //プロフィール詳細
+  final String userId; //ユーザーID(ユーザーに見える)
+
+  const UsersAccountPage({
+    Key? key,
+    required this.id,
+    required this.name,
+    required this.imagePath,
+    required this.selfIntroduction,
+    required this.userId,
+  }) : super(key: key);
 
   @override
-  _AccountPageState createState() => _AccountPageState();
+  _UsersAccountPageState createState() => _UsersAccountPageState();
 }
 
-class _AccountPageState extends State<AccountPage> {
-  //インスタンス化
-  Account myAccount = Authentication.myAccount!;
-
+class _UsersAccountPageState extends State<UsersAccountPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -43,8 +52,7 @@ class _AccountPageState extends State<AccountPage> {
                             children: [
                               CircleAvatar(
                                 radius: 32,
-                                foregroundImage:
-                                    NetworkImage(myAccount.imagePath),
+                                foregroundImage: NetworkImage(widget.imagePath),
                               ),
                               SizedBox(
                                 width: 10,
@@ -53,38 +61,30 @@ class _AccountPageState extends State<AccountPage> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    myAccount.name,
+                                    widget.name,
                                     style:
                                         TextStyle(fontWeight: FontWeight.bold),
                                   ),
                                   Text(
-                                    '@${myAccount.userId}',
+                                    '@${widget.userId}',
                                     style: TextStyle(color: Colors.grey),
                                   ),
                                 ],
                               )
                             ],
                           ),
-                          OutlinedButton(
-                              onPressed: () async {
-                                var result = await Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                        builder: (context) =>
-                                            EditAccountPage()));
-                                if (result == true) {
-                                  setState(() {
-                                    myAccount = Authentication.myAccount!;
-                                  });
-                                }
-                              },
-                              child: Text("編集"))
+                          // IconButton(
+                          //     onPressed: () {
+                          //       print('chat');
+                          //       Firestore.addFireStoreRoom(widget.id);
+                          //     },
+                          //     icon: Icon(Icons.chat_outlined))
                         ],
                       ),
                       SizedBox(
                         height: 15,
                       ),
-                      Text(myAccount.selfIntroduction)
+                      Text(widget.selfIntroduction)
                     ],
                   ),
                 ),
@@ -103,7 +103,7 @@ class _AccountPageState extends State<AccountPage> {
                 Expanded(
                   child: StreamBuilder<QuerySnapshot>(
                       stream: UserFirestore.users
-                          .doc(myAccount.id)
+                          .doc(widget.id)
                           .collection('my_posts')
                           //作成日時が早いもの順に表示
                           .orderBy('created_time', descending: true)
@@ -152,7 +152,7 @@ class _AccountPageState extends State<AccountPage> {
                                               CircleAvatar(
                                                 radius: 22,
                                                 foregroundImage: NetworkImage(
-                                                    myAccount.imagePath),
+                                                    widget.imagePath),
                                               ),
                                               Expanded(
                                                 child: Container(
@@ -169,14 +169,14 @@ class _AccountPageState extends State<AccountPage> {
                                                           Row(
                                                             children: [
                                                               Text(
-                                                                myAccount.name,
+                                                                widget.name,
                                                                 style: TextStyle(
                                                                     fontWeight:
                                                                         FontWeight
                                                                             .bold),
                                                               ),
                                                               Text(
-                                                                '@${myAccount.userId}',
+                                                                '@${widget.userId}',
                                                                 style: TextStyle(
                                                                     color: Colors
                                                                         .grey),

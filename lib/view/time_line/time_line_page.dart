@@ -1,8 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_sns_app/model/account.dart';
 import 'package:firebase_sns_app/model/post.dart';
+import 'package:firebase_sns_app/utils/authentication.dart';
 import 'package:firebase_sns_app/utils/firestore/posts.dart';
 import 'package:firebase_sns_app/utils/firestore/users.dart';
+import 'package:firebase_sns_app/view/account/users_account_page.dart';
 import 'package:firebase_sns_app/view/time_line/post_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
@@ -16,6 +19,8 @@ class TimeLinePage extends StatefulWidget {
 }
 
 class _TimeLinePageState extends State<TimeLinePage> {
+  User currentFirebaseUser = Authentication.currentFirebaseUser!;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -88,10 +93,28 @@ class _TimeLinePageState extends State<TimeLinePage> {
                                   horizontal: 10, vertical: 15),
                               child: Row(
                                 children: [
-                                  CircleAvatar(
-                                    radius: 22,
-                                    foregroundImage:
-                                        NetworkImage(postAccount.imagePath),
+                                  GestureDetector(
+                                    onTap: () async {
+                                      Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                              builder: (context) =>
+                                                  UsersAccountPage(
+                                                    id: postAccount.id,
+                                                    name: postAccount.name,
+                                                    imagePath:
+                                                        postAccount.imagePath,
+                                                    selfIntroduction:
+                                                        postAccount
+                                                            .selfIntroduction,
+                                                    userId: postAccount.userId,
+                                                  )));
+                                    },
+                                    child: CircleAvatar(
+                                      radius: 22,
+                                      foregroundImage:
+                                          NetworkImage(postAccount.imagePath),
+                                    ),
                                   ),
                                   Expanded(
                                     child: Container(

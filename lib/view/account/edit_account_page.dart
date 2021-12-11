@@ -129,7 +129,7 @@ class _EditAccountPageState extends State<EditAccountPage> {
                       var result =
                           await UserFirestore.updateUser(updateAccount);
                       if (result) {
-                        Navigator.pop(context, null);
+                        Navigator.pop(context, true);
                       }
                     }
                   },

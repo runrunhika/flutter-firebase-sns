@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_signin_button/button_list.dart';
 import 'package:flutter_signin_button/button_view.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({Key? key}) : super(key: key);
@@ -21,97 +22,131 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   TextEditingController emailController = TextEditingController();
   TextEditingController passController = TextEditingController();
+  var isLoaded = false;
+  @override
+  void initState() {
+    super.initState();
+    load();
+  }
+
+  //データロード用関数*3(loadRed, loadYellow, loadGreen)
+  Future<void> load() async {
+    final prefs = await SharedPreferences.getInstance();
+    emailController.text = prefs.getString('email') ?? "";
+    passController.text = prefs.getString('pass') ?? "";
+    setState(() {
+      isLoaded = true;
+    });
+  }
+
+  //データ保存用関数*3(saveRed, saveYellow, saveGreen)
+  Future<void> save(key, text) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(key, text);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
-        child: Container(
-          width: double.infinity,
-          child: Column(
-            children: [
-              SizedBox(
-                height: 50,
-              ),
-              Text(
-                "Flutter Test SNS",
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 20),
-                child: Container(
-                  width: 300,
-                  child: TextField(
-                    controller: emailController,
-                    decoration: InputDecoration(hintText: "メールアドレス"),
+        child: Visibility(
+          visible: isLoaded,
+          child: Container(
+            width: double.infinity,
+            child: Column(
+              children: [
+                SizedBox(
+                  height: 50,
+                ),
+                Text(
+                  "Flutter Test SNS",
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 20),
+                  child: Container(
+                    width: 300,
+                    child: TextField(
+                      controller: emailController,
+                      onChanged: (text) {
+                        save('email', text);
+                      },
+                      decoration: InputDecoration(hintText: "メールアドレス"),
+                    ),
                   ),
                 ),
-              ),
-              Container(
-                width: 300,
-                child: TextField(
-                  controller: passController,
-                  decoration: InputDecoration(hintText: "パスワード"),
+                Container(
+                  width: 300,
+                  child: TextField(
+                    controller: passController,
+                    onChanged: (text) {
+                      save('pass', text);
+                    },
+                    decoration: InputDecoration(hintText: "パスワード"),
+                  ),
                 ),
-              ),
-              RichText(
-                  text: TextSpan(
-                      style: TextStyle(color: Colors.black),
-                      children: [
-                    TextSpan(text: "アカウントを作成していない方は"),
-                    TextSpan(
-                        text: "こちら",
-                        style: TextStyle(color: Colors.blue),
-                        //Button機能を付与
-                        recognizer: TapGestureRecognizer()
-                          ..onTap = () {
-                            Navigator.push(
+                RichText(
+                    text: TextSpan(
+                        style: TextStyle(color: Colors.black),
+                        children: [
+                      TextSpan(text: "アカウントを作成していない方は"),
+                      TextSpan(
+                          text: "こちら",
+                          style: TextStyle(color: Colors.blue),
+                          //Button機能を付与
+                          recognizer: TapGestureRecognizer()
+                            ..onTap = () {
+                              Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (context) =>
+                                          CreateAccountPage()));
+                            })
+                    ])),
+                SizedBox(
+                  height: 70,
+                ),
+                ElevatedButton(
+                    onPressed: () async {
+                      var result = await Authentication.emailSignIn(
+                          email: emailController.text,
+                          pass: passController.text);
+                      if (result is UserCredential) {
+                        if (result.user!.emailVerified) {
+                          var _result =
+                              await UserFirestore.getUser(result.user!.uid);
+                          if (_result) {
+                            Navigator.pushReplacement(
                                 context,
                                 MaterialPageRoute(
-                                    builder: (context) => CreateAccountPage()));
-                          })
-                  ])),
-              SizedBox(
-                height: 70,
-              ),
-              ElevatedButton(
-                  onPressed: () async {
-                    var result = await Authentication.emailSignIn(
-                        email: emailController.text, pass: passController.text);
-                    if (result is UserCredential) {
-                      if (result.user!.emailVerified) {
-                        var _result =
-                            await UserFirestore.getUser(result.user!.uid);
-                        if (_result) {
-                          Navigator.pushReplacement(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (context) => Screen()));
-                        } else {
-                          print('メール認証できてません');
+                                    builder: (context) => Screen()));
+                          } else {
+                            print('メール認証できてません');
+                          }
                         }
                       }
-                    }
-                  },
-                  child: Text("Emailでログイン")),
-              SignInButton(Buttons.Google, onPressed: () async {
-                var result = await Authentication.signInWithGoogle();
-                if (result is UserCredential) {
-                  //Cloud FireStore からユーザー情報を取得 (true: 過去にアカウント作成している)
-                  var result = await UserFirestore.getUser(
-                      Authentication.currentFirebaseUser!.uid);
+                    },
+                    child: Text("Emailでログイン")),
+                SignInButton(Buttons.Google, onPressed: () async {
+                  var result = await Authentication.signInWithGoogle();
+                  if (result is UserCredential) {
+                    //Cloud FireStore からユーザー情報を取得 (true: 過去にアカウント作成している)
+                    var result = await UserFirestore.getUser(
+                        Authentication.currentFirebaseUser!.uid);
 
-                  if (result) {
-                    Navigator.pushReplacement(context,
-                        MaterialPageRoute(builder: (context) => Screen()));
-                  } else {
-                    Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (context) => CreateAccountPage()));
+                    if (result) {
+                      Navigator.pushReplacement(context,
+                          MaterialPageRoute(builder: (context) => Screen()));
+                    } else {
+                      Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => CreateAccountPage()));
+                    }
                   }
-                }
-              })
-            ],
+                })
+              ],
+            ),
           ),
         ),
       ),
